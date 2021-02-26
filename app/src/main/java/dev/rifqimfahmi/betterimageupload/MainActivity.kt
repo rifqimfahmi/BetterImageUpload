@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadOriginalImage(imageUri: Uri) {
-        val filePath = BetterImageUtils.getFilePath(this, imageUri)
+        val filePath = BetterImageUtils.getImageFilePath(this, imageUri)
         val fileSize = updateImageMetaDataSize(filePath)
         val bmOptions = updateImageMetaDataDimension(filePath)
         originalSize?.text = "${fileSize / 1024} KB"
@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun optimizeImageBeforeUpload(imageUri: Uri) {
-        val filePath = BetterImageUtils.getFilePath(this, imageUri)
+        val filePath = BetterImageUtils.getImageFilePath(this, imageUri)
         val scaledBitmap = ImageLoader.loadBitmap(
             this, filePath, null, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
         )

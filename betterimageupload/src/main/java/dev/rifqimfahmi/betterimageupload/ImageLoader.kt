@@ -34,7 +34,7 @@ object ImageLoader {
                 path = uri.path
             } else {
                 try {
-                    path = BetterImageUtils.getFilePath(context, uri)
+                    path = BetterImageUtils.getImageFilePath(context, uri)
                 } catch (e: Throwable) {
                     e.printStackTrace()
                 }
@@ -77,7 +77,7 @@ object ImageLoader {
         if (path != null) {
             exifPath = path
         } else if (uri != null) {
-            exifPath = BetterImageUtils.getFilePath(context, uri)
+            exifPath = BetterImageUtils.getImageFilePath(context, uri)
         }
         var matrix: Matrix? = null
         if (exifPath != null) {
