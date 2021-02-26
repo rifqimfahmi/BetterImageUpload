@@ -13,7 +13,7 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
-import dev.rifqimfahmi.betterimageupload.util.AndroidUtilities
+import dev.rifqimfahmi.betterimageupload.util.BetterImageUtils
 import java.io.FileInputStream
 
 
@@ -84,7 +84,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadOriginalImage(imageUri: Uri) {
-        val filePath = AndroidUtilities.getPath(this, imageUri)
+        val filePath = BetterImageUtils.getFilePath(this, imageUri)
         val fileSize = updateImageMetaDataSize(filePath)
         val bmOptions = updateImageMetaDataDimension(filePath)
         originalSize?.text = "${fileSize / 1024} KB"
@@ -93,7 +93,7 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun optimizeImageBeforeUpload(imageUri: Uri) {
-        val filePath = AndroidUtilities.getPath(this, imageUri)
+        val filePath = BetterImageUtils.getFilePath(this, imageUri)
         val scaledBitmap = ImageLoader.loadBitmap(
             this, filePath, null, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
         )

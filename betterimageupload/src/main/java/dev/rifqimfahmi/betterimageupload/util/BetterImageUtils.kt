@@ -7,9 +7,9 @@ import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
 
-object AndroidUtilities {
+object BetterImageUtils {
 
-    fun getPath(context: Context?, uri: Uri): String? {
+    fun getFilePath(context: Context?, uri: Uri): String? {
         try {
             if (DocumentsContract.isDocumentUri(context, uri)) {
                 if (isExternalStorageDocument(uri)) {

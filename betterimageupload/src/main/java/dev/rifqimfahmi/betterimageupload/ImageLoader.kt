@@ -8,7 +8,7 @@ import android.graphics.Matrix
 import android.media.ExifInterface
 import android.net.Uri
 import android.os.Build
-import dev.rifqimfahmi.betterimageupload.util.AndroidUtilities
+import dev.rifqimfahmi.betterimageupload.util.BetterImageUtils
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
@@ -34,7 +34,7 @@ object ImageLoader {
                 path = uri.path
             } else {
                 try {
-                    path = AndroidUtilities.getPath(context, uri)
+                    path = BetterImageUtils.getFilePath(context, uri)
                 } catch (e: Throwable) {
                     e.printStackTrace()
                 }
@@ -77,7 +77,7 @@ object ImageLoader {
         if (path != null) {
             exifPath = path
         } else if (uri != null) {
-            exifPath = AndroidUtilities.getPath(context, uri)
+            exifPath = BetterImageUtils.getFilePath(context, uri)
         }
         var matrix: Matrix? = null
         if (exifPath != null) {
