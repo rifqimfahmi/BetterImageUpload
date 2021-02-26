@@ -12,6 +12,7 @@ import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
+import com.bumptech.glide.Glide
 import dev.rifqimfahmi.betterimageupload.util.AndroidUtilities
 import java.io.FileInputStream
 import java.lang.Exception
@@ -80,6 +81,7 @@ class MainActivity : AppCompatActivity() {
         val bmOptions = updateImageMetaDataDimension(filePath)
         originalSize?.text = "${fileSize / 1024} KB"
         originalDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
+        Glide.with(this).load(filePath).into(originalImg!!)
     }
 
     private fun updateImageMetaDataSize(filePath: String?): Long {
