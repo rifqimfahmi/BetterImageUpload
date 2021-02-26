@@ -9,14 +9,94 @@
 
     <ImageView
         android:id="@+id/original_image"
-        android:layout_width="0dp"
-        android:layout_height="280dp"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
         android:background="@color/cardview_dark_background"
-        android:scaleType="fitCenter"
-        app:layout_constraintEnd_toStartOf="@+id/linearLayout"
+        android:scaleType="centerCrop"
+        android:adjustViewBounds="true"
         app:layout_constraintStart_toStartOf="parent"
         app:layout_constraintTop_toTopOf="parent"
         tools:srcCompat="@tools:sample/avatars" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:padding="6dp"
+        app:layout_constraintBottom_toBottomOf="@+id/original_image"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/original_image"
+        app:layout_constraintTop_toTopOf="parent">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dimension: " />
+
+        <TextView
+            android:id="@+id/original_dimension"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Size: " />
+
+        <TextView
+            android:id="@+id/original_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-" />
+    </LinearLayout>
+
+    <ImageView
+        android:id="@+id/optimized_image"
+        android:layout_width="240dp"
+        android:layout_height="240dp"
+        android:background="@color/cardview_dark_background"
+        android:scaleType="centerCrop"
+        android:adjustViewBounds="true"
+        app:layout_constraintTop_toBottomOf="@+id/original_image"
+        app:layout_constraintStart_toStartOf="parent"
+        android:layout_marginTop="8dp"
+        tools:srcCompat="@tools:sample/avatars" />
+
+    <LinearLayout
+        android:id="@+id/linearLayout2"
+        android:layout_width="0dp"
+        android:layout_height="0dp"
+        android:orientation="vertical"
+        android:padding="6dp"
+        app:layout_constraintBottom_toBottomOf="@+id/optimized_image"
+        app:layout_constraintEnd_toEndOf="parent"
+        app:layout_constraintStart_toEndOf="@+id/optimized_image"
+        app:layout_constraintTop_toTopOf="@+id/optimized_image">
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Dimension: " />
+
+        <TextView
+            android:id="@+id/optimized_dimension"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="Size: " />
+
+        <TextView
+            android:id="@+id/optimized_size"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:text="-" />
+    </LinearLayout>
 
     <Button
         android:id="@+id/btn_choose_image"
@@ -27,34 +107,5 @@
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:layout_constraintStart_toStartOf="parent" />
-
-    <LinearLayout
-        android:id="@+id/linearLayout"
-        android:layout_width="120dp"
-        android:layout_height="0dp"
-        android:orientation="vertical"
-        android:padding="6dp"
-        app:layout_constraintBottom_toBottomOf="@+id/original_image"
-        app:layout_constraintEnd_toEndOf="parent"
-        app:layout_constraintTop_toTopOf="parent">
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Dimension: "/>
-        <TextView
-            android:id="@+id/original_dimension"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="-"/>
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Size: "/>
-        <TextView
-            android:id="@+id/original_size"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="-"/>
-    </LinearLayout>
 
 </androidx.constraintlayout.widget.ConstraintLayout>

@@ -15,7 +15,6 @@ import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import dev.rifqimfahmi.betterimageupload.util.AndroidUtilities
 import java.io.FileInputStream
-import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity() {
@@ -26,9 +25,14 @@ class MainActivity : AppCompatActivity() {
     )
 
     private var btnChooseImg: Button? = null
+
     private var originalImg: ImageView? = null
     private var originalDimension: TextView? = null
     private var originalSize: TextView? = null
+
+    private var optimizedImg: ImageView? = null
+    private var optimizedDimension: TextView? = null
+    private var optimizedSize: TextView? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -37,11 +41,21 @@ class MainActivity : AppCompatActivity() {
         setupBtnChooseImg()
     }
 
+    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
+        super.onActivityResult(requestCode, resultCode, data)
+        if (resultCode == RESULT_OK && requestCode == REQUEST_SELECT_PICTURE) {
+            onSuccessReturnFromChooseImage(data)
+        }
+    }
+
     private fun bindView() {
         btnChooseImg = findViewById(R.id.btn_choose_image)
         originalImg = findViewById(R.id.original_image)
         originalDimension = findViewById(R.id.original_dimension)
         originalSize = findViewById(R.id.original_size)
+        optimizedImg = findViewById(R.id.optimized_image)
+        optimizedDimension = findViewById(R.id.optimized_dimension)
+        optimizedSize = findViewById(R.id.optimized_size)
     }
 
     private fun setupBtnChooseImg() {
@@ -63,16 +77,10 @@ class MainActivity : AppCompatActivity() {
         startActivityForResult(chooser, REQUEST_SELECT_PICTURE)
     }
 
-    override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
-        super.onActivityResult(requestCode, resultCode, data)
-        if (resultCode == RESULT_OK && requestCode == REQUEST_SELECT_PICTURE) {
-            onSuccessReturnFromChooseImage(data)
-        }
-    }
-
     private fun onSuccessReturnFromChooseImage(data: Intent?) {
         val imageUri = data?.data ?: return
         loadOriginalImage(imageUri)
+        optimizeImageBeforeUpload(imageUri)
     }
 
     private fun loadOriginalImage(imageUri: Uri) {
@@ -82,6 +90,28 @@ class MainActivity : AppCompatActivity() {
         originalSize?.text = "${fileSize / 1024} KB"
         originalDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
         Glide.with(this).load(filePath).into(originalImg!!)
+    }
+
+    private fun optimizeImageBeforeUpload(imageUri: Uri) {
+        val filePath = AndroidUtilities.getPath(this, imageUri)
+        val scaledBitmap = ImageLoader.loadBitmap(
+            this, filePath, null, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
+        )
+        val optimizedImagePath = ImageLoader.scaleAndSaveImage(
+            scaledBitmap,
+                MAX_PHOTO_SIZE,
+                MAX_PHOTO_SIZE,
+                true,
+                80,
+                false,
+                101,
+                101
+            )
+        val fileSize = updateImageMetaDataSize(optimizedImagePath)
+        val bmOptions = updateImageMetaDataDimension(optimizedImagePath)
+        optimizedSize?.text = "${fileSize / 1024} KB"
+        optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
+        Glide.with(this).load(optimizedImagePath).into(optimizedImg!!)
     }
 
     private fun updateImageMetaDataSize(filePath: String?): Long {
@@ -128,5 +158,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val REQUEST_SELECT_PICTURE = 1
         const val REQUEST_EXTERNAL_STORAGE = 2
+        const val MAX_PHOTO_SIZE: Float = 1280f
     }
 }
