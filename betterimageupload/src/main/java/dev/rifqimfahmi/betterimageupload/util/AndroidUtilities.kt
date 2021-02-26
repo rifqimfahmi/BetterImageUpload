@@ -6,16 +6,12 @@ import android.net.Uri
 import android.os.Environment
 import android.provider.DocumentsContract
 import android.provider.MediaStore
-import dev.rifqimfahmi.betterimageupload.ApplicationLoader
 
 object AndroidUtilities {
 
-    fun getPath(uri: Uri): String? {
+    fun getPath(context: Context?, uri: Uri): String? {
         try {
-            if (DocumentsContract.isDocumentUri(
-                    ApplicationLoader.appCtx, uri
-                )
-            ) {
+            if (DocumentsContract.isDocumentUri(context, uri)) {
                 if (isExternalStorageDocument(uri)) {
                     val docId = DocumentsContract.getDocumentId(uri)
                     val split = docId.split(":".toRegex()).toTypedArray()
@@ -30,7 +26,7 @@ object AndroidUtilities {
                         id.toLong()
                     )
                     return getDataColumn(
-                        ApplicationLoader.appCtx,
+                        context,
                         contentUri,
                         null,
                         null
@@ -50,7 +46,7 @@ object AndroidUtilities {
                         split[1]
                     )
                     return getDataColumn(
-                        ApplicationLoader.appCtx,
+                        context,
                         contentUri,
                         selection,
                         selectionArgs
@@ -58,7 +54,7 @@ object AndroidUtilities {
                 }
             } else if ("content".equals(uri.scheme, ignoreCase = true)) {
                 return getDataColumn(
-                    ApplicationLoader.appCtx,
+                    context,
                     uri,
                     null,
                     null
