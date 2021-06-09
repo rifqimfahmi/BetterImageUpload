@@ -103,9 +103,7 @@ class MainActivity : AppCompatActivity() {
             scaledBitmap,
                 MAX_PHOTO_SIZE,
                 MAX_PHOTO_SIZE,
-                true,
                 80,
-                false,
                 101,
                 101
             )

@@ -5,12 +5,13 @@ import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
+import androidx.exifinterface.media.ExifInterface
 import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.*
+import kotlin.math.max
 import kotlin.math.min
 
 object ImageLoader {
@@ -77,22 +78,22 @@ object ImageLoader {
         var bitmap: Bitmap? = null
         inputStream?.close()
         val inputStream2: InputStream? = context.contentResolver.openInputStream(imageUri)
-            try {
-                bitmap = BitmapFactory.decodeStream(inputStream2, null, bmOptions)
-                if (bitmap != null) {
-                    val newBitmap: Bitmap = Bitmap.createBitmap(
-                        bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
-                    )
-                    if (newBitmap != bitmap) {
-                        bitmap.recycle()
-                        bitmap = newBitmap
-                    }
+        try {
+            bitmap = BitmapFactory.decodeStream(inputStream2, null, bmOptions)
+            if (bitmap != null) {
+                val newBitmap: Bitmap = Bitmap.createBitmap(
+                    bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+                )
+                if (newBitmap != bitmap) {
+                    bitmap.recycle()
+                    bitmap = newBitmap
                 }
-            } catch (e: Throwable) {
-                e.printStackTrace()
-            } finally {
-                inputStream?.close()
             }
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        } finally {
+            inputStream?.close()
+        }
         return bitmap
     }
 
@@ -100,38 +101,24 @@ object ImageLoader {
         bitmap: Bitmap?,
         maxWidth: Float,
         maxHeight: Float,
-        progressive: Boolean,
         quality: Int,
-        cache: Boolean,
         minWidth: Int,
         minHeight: Int
     ): String? {
         return scaleAndSaveImage(
-            bitmap,
-            CompressFormat.JPEG,
-            progressive,
-            maxWidth,
-            maxHeight,
-            quality,
-            cache,
-            minWidth,
-            minHeight,
-            false
+            bitmap, CompressFormat.JPEG, maxWidth, maxHeight,
+            quality, minWidth, minHeight
         )
     }
 
     fun scaleAndSaveImage(
-//        photoSize: TLRPC.PhotoSize?,
         bitmap: Bitmap?,
         compressFormat: CompressFormat?,
-        progressive: Boolean,
         maxWidth: Float,
         maxHeight: Float,
         quality: Int,
-        cache: Boolean,
         minWidth: Int,
-        minHeight: Int,
-        forceCacheDir: Boolean
+        minHeight: Int
     ): String? {
         if (bitmap == null) {
             return null
@@ -149,7 +136,7 @@ object ImageLoader {
             } else if (photoW > minWidth && photoH < minHeight) {
                 photoH / minHeight
             } else {
-                Math.max(photoW / minWidth, photoH / minHeight)
+                max(photoW / minWidth, photoH / minHeight)
             }
             scaleAnyway = true
         }
@@ -159,132 +146,37 @@ object ImageLoader {
             null
         } else try {
             return scaleAndSaveImageInternal(
-//                photoSize,
-                bitmap,
-                compressFormat,
-                progressive,
-                w,
-                h,
-                photoW,
-                photoH,
-                scaleFactor,
-                quality,
-                cache,
-                scaleAnyway,
-                forceCacheDir
+                bitmap, compressFormat, w, h,
+                scaleFactor, quality, scaleAnyway
             )
         } catch (e: Throwable) {
             e.printStackTrace()
-//            ImageLoader.getInstance().clearMemory()
-            System.gc()
-            try {
-//                ImageLoader.scaleAndSaveImageInternal(
-//                    photoSize,
-//                    bitmap,
-//                    compressFormat,
-//                    progressive,
-//                    w,
-//                    h,
-//                    photoW,
-//                    photoH,
-//                    scaleFactor,
-//                    quality,
-//                    cache,
-//                    scaleAnyway,
-//                    forceCacheDir
-//                )
-            } catch (e2: Throwable) {
-                e.printStackTrace()
-                null
-            }
         }
 
         return ""
     }
 
     private fun scaleAndSaveImageInternal(
-//        photoSize: TLRPC.PhotoSize,
         bitmap: Bitmap,
         compressFormat: CompressFormat?,
-        progressive: Boolean,
         w: Int,
         h: Int,
-        photoW: Float,
-        photoH: Float,
         scaleFactor: Float,
         quality: Int,
-        cache: Boolean,
-        scaleAnyway: Boolean,
-        forceCacheDir: Boolean
+        scaleAnyway: Boolean
     ): String? {
-//        var photoSize: TLRPC.PhotoSize? = photoSize
         val scaledBitmap: Bitmap = if (scaleFactor > 1 || scaleAnyway) {
             Bitmap.createScaledBitmap(bitmap, w, h, true)
         } else {
             bitmap
         }
-//        val check = photoSize != null
-//        val location: TLRPC.TL_fileLocationToBeDeprecated
-//        if (photoSize == null || photoSize.location !is TLRPC.TL_fileLocationToBeDeprecated) {
-//            location = TL_fileLocationToBeDeprecated()
-//            location.volume_id = Int.MIN_VALUE
-//            location.dc_id = Int.MIN_VALUE
-//            location.local_id = SharedConfig.getLastLocalId()
-//            location.file_reference = ByteArray(0)
-//            photoSize = TL_photoSize()
-//            photoSize.location = location
-//            photoSize.w = scaledBitmap.width
-//            photoSize.h = scaledBitmap.height
-//            if (photoSize.w <= 100 && photoSize.h <= 100) {
-//                photoSize.type = "s"
-//            } else if (photoSize.w <= 320 && photoSize.h <= 320) {
-//                photoSize.type = "m"
-//            } else if (photoSize.w <= 800 && photoSize.h <= 800) {
-//                photoSize.type = "x"
-//            } else if (photoSize.w <= 1280 && photoSize.h <= 1280) {
-//                photoSize.type = "y"
-//            } else {
-//                photoSize.type = "w"
-//            }
-//        } else {
-//            location = photoSize.location as TLRPC.TL_fileLocationToBeDeprecated
-//        }
-        var uniqueID = UUID.randomUUID().toString()
-        val fileName: String = "test_optim_$uniqueID.jpg"
-        val fileDir: File = File("/storage/emulated/0/Download/")
-//        fileDir = if (forceCacheDir) {
-//            FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE)
-//        } else {
-//            if (location.volume_id !== Int.MIN_VALUE)
-//                FileLoader.getDirectory(FileLoader.MEDIA_DIR_IMAGE)
-//            else
-//                FileLoader.getDirectory(FileLoader.MEDIA_DIR_CACHE)
-//        }
+        val uniqueID = UUID.randomUUID().toString()
+        val fileName = "test_optim_$uniqueID.jpg"
+        val fileDir = File("/storage/emulated/0/Download/")
         val cacheFile = File(fileDir, fileName)
-//        if (compressFormat == CompressFormat.JPEG && progressive && BuildVars.DEBUG_VERSION) { // not using native
-//            photoSize.size = Utilities.saveProgressiveJpeg(
-//                scaledBitmap,
-//                scaledBitmap.width,
-//                scaledBitmap.height,
-//                scaledBitmap.rowBytes,
-//                quality,
-//                cacheFile.absolutePath
-//            )
-//        } else {
-            val stream = FileOutputStream(cacheFile)
-            scaledBitmap.compress(compressFormat, quality, stream) // compress bitmap here
-//            if (!cache) {
-//                photoSize.size = stream.channel.size().toInt()
-//            }
-            stream.close()
-//        }
-//        if (cache) {
-//            val stream2 = ByteArrayOutputStream()
-//            scaledBitmap.compress(compressFormat, quality, stream2)
-//            photoSize.bytes = stream2.toByteArray()
-//            photoSize.size = photoSize.bytes.length
-//            stream2.close()
-//        }
+        val stream = FileOutputStream(cacheFile)
+        scaledBitmap.compress(compressFormat, quality, stream) // compress bitmap here
+        stream.close()
         if (scaledBitmap != bitmap) {
             scaledBitmap.recycle()
         }
