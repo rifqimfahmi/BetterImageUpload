@@ -173,13 +173,13 @@ object ImageUtil {
         val uniqueID = UUID.randomUUID().toString()
         val fileName = "test_optim_$uniqueID.jpg"
         val fileDir = File("/storage/emulated/0/Download/")
-        val cacheFile = File(fileDir, fileName)
-        val stream = FileOutputStream(cacheFile)
+        val imageFile = File(fileDir, fileName)
+        val stream = FileOutputStream(imageFile)
         scaledBitmap.compress(compressFormat, quality, stream) // compress bitmap here
         stream.close()
         if (scaledBitmap != bitmap) {
             scaledBitmap.recycle()
         }
-        return cacheFile.absolutePath
+        return imageFile.absolutePath
     }
 }

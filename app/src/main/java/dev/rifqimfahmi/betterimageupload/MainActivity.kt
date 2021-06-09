@@ -100,19 +100,14 @@ class MainActivity : AppCompatActivity() {
             this, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
         )
         val optimizedImagePath = ImageUtil.scaleAndSaveImage(
-            scaledBitmap,
-                MAX_PHOTO_SIZE,
-                MAX_PHOTO_SIZE,
-                80,
-                101,
-                101
-            )
-        val imageUri = Uri.fromFile(File(optimizedImagePath))
-        val fileSize = updateImageMetaDataSize(imageUri)
-        val bmOptions = updateImageMetaDataDimension(imageUri) ?: return
+            scaledBitmap, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, 80, 101, 101
+        ) ?: return
+        val uri = Uri.fromFile(File(optimizedImagePath))
+        val fileSize = updateImageMetaDataSize(uri)
+        val bmOptions = updateImageMetaDataDimension(uri) ?: return
         optimizedSize?.text = "${fileSize / 1024} KB"
         optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
-        Glide.with(this).load(imageUri).into(optimizedImg!!)
+        Glide.with(this).load(uri).into(optimizedImg!!)
     }
 
     private fun updateImageMetaDataSize(imageUri: Uri): Long {
