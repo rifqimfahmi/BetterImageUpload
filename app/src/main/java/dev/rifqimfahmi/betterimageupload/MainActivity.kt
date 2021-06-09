@@ -96,10 +96,10 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun optimizeImageBeforeUpload(imageUri: Uri) {
-        val scaledBitmap = ImageLoader.loadBitmap(
+        val scaledBitmap = ImageUtil.loadBitmap(
             this, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
         )
-        val optimizedImagePath = ImageLoader.scaleAndSaveImage(
+        val optimizedImagePath = ImageUtil.scaleAndSaveImage(
             scaledBitmap,
                 MAX_PHOTO_SIZE,
                 MAX_PHOTO_SIZE,

@@ -14,7 +14,7 @@ import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
-object ImageLoader {
+object ImageUtil {
 
     fun loadBitmap(
         context: Context,
