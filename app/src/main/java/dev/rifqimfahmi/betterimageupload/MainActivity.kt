@@ -3,9 +3,14 @@ package dev.rifqimfahmi.betterimageupload
 import android.Manifest
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
+import android.graphics.ImageDecoder
 import android.net.Uri
+import android.os.Build
 import android.os.Bundle
+import android.os.ParcelFileDescriptor
+import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
@@ -14,7 +19,8 @@ import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
 import dev.rifqimfahmi.betterimageupload.util.BetterImageUtils
-import java.io.FileInputStream
+import java.io.InputStream
+import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity() {
@@ -84,52 +90,64 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun loadOriginalImage(imageUri: Uri) {
-        val filePath = BetterImageUtils.getImageFilePath(this, imageUri)
-        val fileSize = updateImageMetaDataSize(filePath)
-        val bmOptions = updateImageMetaDataDimension(filePath)
+        val fileSize = updateImageMetaDataSize(imageUri)
+        val bitmap = updateImageMetaDataDimension(imageUri) ?: return
         originalSize?.text = "${fileSize / 1024} KB"
-        originalDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
-        Glide.with(this).load(filePath).into(originalImg!!)
+        originalDimension?.text = "${bitmap.outWidth}x${bitmap.outHeight}"
+        Glide.with(this).load(imageUri).into(originalImg!!)
     }
 
     private fun optimizeImageBeforeUpload(imageUri: Uri) {
-        val filePath = BetterImageUtils.getImageFilePath(this, imageUri)
-        val scaledBitmap = ImageLoader.loadBitmap(
-            this, filePath, null, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
-        )
-        val optimizedImagePath = ImageLoader.scaleAndSaveImage(
-            scaledBitmap,
-                MAX_PHOTO_SIZE,
-                MAX_PHOTO_SIZE,
-                true,
-                80,
-                false,
-                101,
-                101
-            )
-        val fileSize = updateImageMetaDataSize(optimizedImagePath)
-        val bmOptions = updateImageMetaDataDimension(optimizedImagePath)
-        optimizedSize?.text = "${fileSize / 1024} KB"
-        optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
-        Glide.with(this).load(optimizedImagePath).into(optimizedImg!!)
+//        val filePath = BetterImageUtils.getImageFilePath(this, imageUri)
+//        val scaledBitmap = ImageLoader.loadBitmap(
+//            this, filePath, null, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
+//        )
+//        val optimizedImagePath = ImageLoader.scaleAndSaveImage(
+//            scaledBitmap,
+//                MAX_PHOTO_SIZE,
+//                MAX_PHOTO_SIZE,
+//                true,
+//                80,
+//                false,
+//                101,
+//                101
+//            )
+//        val fileSize = updateImageMetaDataSize(optimizedImagePath)
+//        val bmOptions = updateImageMetaDataDimension(optimizedImagePath)
+//        optimizedSize?.text = "${fileSize / 1024} KB"
+//        optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
+//        Glide.with(this).load(optimizedImagePath).into(optimizedImg!!)
     }
 
-    private fun updateImageMetaDataSize(filePath: String?): Long {
-        var fileSize: Long = 0
+    private fun updateImageMetaDataSize(imageUri: Uri): Long {
+        var input: ParcelFileDescriptor.AutoCloseInputStream? = null
         try {
-            val fileInput = FileInputStream(filePath)
-            fileSize = fileInput.channel.size()
-            fileInput.close()
-        } catch (ignore: Exception) {}
-        return fileSize
+            input = contentResolver.openInputStream(imageUri) as
+                    ParcelFileDescriptor.AutoCloseInputStream
+            return input.channel.size()
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            input?.close()
+        }
+        return 0
     }
 
-    private fun updateImageMetaDataDimension(filePath: String?): BitmapFactory.Options {
-        val bmOptions = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
+    private fun updateImageMetaDataDimension(imageUri: Uri): BitmapFactory.Options? {
+        var input: InputStream? = null
+        try {
+            val bmOptions = BitmapFactory.Options().apply {
+                inJustDecodeBounds = true
+            }
+            input = contentResolver.openInputStream(imageUri)
+            BitmapFactory.decodeStream(input, null, bmOptions)
+            return bmOptions
+        } catch (e: Exception) {
+            e.printStackTrace()
+        } finally {
+            input?.close()
         }
-        BitmapFactory.decodeFile(filePath, bmOptions)
-        return bmOptions
+        return null
     }
 
     private fun isPermissionGranted(): Boolean {
