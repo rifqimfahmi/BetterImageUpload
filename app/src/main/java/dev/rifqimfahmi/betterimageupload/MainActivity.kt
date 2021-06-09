@@ -1,16 +1,12 @@
 package dev.rifqimfahmi.betterimageupload
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
-import android.graphics.Bitmap
 import android.graphics.BitmapFactory
-import android.graphics.ImageDecoder
 import android.net.Uri
-import android.os.Build
 import android.os.Bundle
-import android.os.ParcelFileDescriptor
-import android.provider.MediaStore
 import android.widget.Button
 import android.widget.ImageView
 import android.widget.TextView
@@ -18,9 +14,9 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
-import dev.rifqimfahmi.betterimageupload.util.BetterImageUtils
+import java.io.File
+import java.io.FileInputStream
 import java.io.InputStream
-import java.lang.Exception
 
 
 class MainActivity : AppCompatActivity() {
@@ -89,6 +85,7 @@ class MainActivity : AppCompatActivity() {
         optimizeImageBeforeUpload(imageUri)
     }
 
+    @SuppressLint("SetTextI18n")
     private fun loadOriginalImage(imageUri: Uri) {
         val fileSize = updateImageMetaDataSize(imageUri)
         val bitmap = updateImageMetaDataDimension(imageUri) ?: return
@@ -97,33 +94,33 @@ class MainActivity : AppCompatActivity() {
         Glide.with(this).load(imageUri).into(originalImg!!)
     }
 
+    @SuppressLint("SetTextI18n")
     private fun optimizeImageBeforeUpload(imageUri: Uri) {
-//        val filePath = BetterImageUtils.getImageFilePath(this, imageUri)
-//        val scaledBitmap = ImageLoader.loadBitmap(
-//            this, filePath, null, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
-//        )
-//        val optimizedImagePath = ImageLoader.scaleAndSaveImage(
-//            scaledBitmap,
-//                MAX_PHOTO_SIZE,
-//                MAX_PHOTO_SIZE,
-//                true,
-//                80,
-//                false,
-//                101,
-//                101
-//            )
-//        val fileSize = updateImageMetaDataSize(optimizedImagePath)
-//        val bmOptions = updateImageMetaDataDimension(optimizedImagePath)
-//        optimizedSize?.text = "${fileSize / 1024} KB"
-//        optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
-//        Glide.with(this).load(optimizedImagePath).into(optimizedImg!!)
+        val scaledBitmap = ImageLoader.loadBitmap(
+            this, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
+        )
+        val optimizedImagePath = ImageLoader.scaleAndSaveImage(
+            scaledBitmap,
+                MAX_PHOTO_SIZE,
+                MAX_PHOTO_SIZE,
+                true,
+                80,
+                false,
+                101,
+                101
+            )
+        val imageUri = Uri.fromFile(File(optimizedImagePath))
+        val fileSize = updateImageMetaDataSize(imageUri)
+        val bmOptions = updateImageMetaDataDimension(imageUri) ?: return
+        optimizedSize?.text = "${fileSize / 1024} KB"
+        optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
+        Glide.with(this).load(imageUri).into(optimizedImg!!)
     }
 
     private fun updateImageMetaDataSize(imageUri: Uri): Long {
-        var input: ParcelFileDescriptor.AutoCloseInputStream? = null
+        var input: FileInputStream? = null
         try {
-            input = contentResolver.openInputStream(imageUri) as
-                    ParcelFileDescriptor.AutoCloseInputStream
+            input = contentResolver.openInputStream(imageUri) as FileInputStream
             return input.channel.size()
         } catch (e: Exception) {
             e.printStackTrace()

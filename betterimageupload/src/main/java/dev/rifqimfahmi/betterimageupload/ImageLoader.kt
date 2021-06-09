@@ -5,7 +5,7 @@ import android.graphics.Bitmap
 import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
-import android.media.ExifInterface
+import androidx.exifinterface.media.ExifInterface
 import android.net.Uri
 import android.os.Build
 import dev.rifqimfahmi.betterimageupload.util.BetterImageUtils
@@ -13,53 +13,54 @@ import java.io.File
 import java.io.FileOutputStream
 import java.io.InputStream
 import java.util.*
+import kotlin.math.min
 
 object ImageLoader {
 
     fun loadBitmap(
         context: Context,
-        path: String?,
-        uri: Uri?,
+        imageUri: Uri,
         maxWidth: Float,
         maxHeight: Float,
         useMaxScale: Boolean
     ): Bitmap? {
-        var path = path
-        val bmOptions = BitmapFactory.Options()
-        bmOptions.inJustDecodeBounds = true
-        var inputStream: InputStream? = null
-        if (path == null && uri != null && uri.scheme != null) {
-            val imageFilePath: String? = null
-            if (uri.scheme!!.contains("file")) {
-                path = uri.path
-            } else {
-                try {
-                    path = BetterImageUtils.getImageFilePath(context, uri)
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                }
-            }
+        val bmOptions = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
         }
-        if (path != null) {
-            BitmapFactory.decodeFile(path, bmOptions)
-        } else if (uri != null) {
-            val error = false
-            try {
-                inputStream = context.getContentResolver().openInputStream(uri)
-                BitmapFactory.decodeStream(inputStream, null, bmOptions)
-                inputStream?.close()
-                inputStream = context.getContentResolver().openInputStream(uri)
-            } catch (e: Throwable) {
-                e.printStackTrace()
-                return null
-            }
-        }
+        var inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+//        if (path == null && imageUri != null && imageUri.scheme != null) {
+//            val imageFilePath: String? = null
+//            if (imageUri.scheme!!.contains("file")) {
+//                path = imageUri.path
+//            } else {
+//                try {
+//                    path = BetterImageUtils.getImageFilePath(context, imageUri)
+//                } catch (e: Throwable) {
+//                    e.printStackTrace()
+//                }
+//            }
+//        }
+        BitmapFactory.decodeStream(inputStream, null, bmOptions)
+//        if (path != null) {
+//            BitmapFactory.decodeFile(path, bmOptions)
+//        } else if (imageUri != null) {
+//            val error = false
+//            try {
+//                inputStream = context.getContentResolver().openInputStream(imageUri)
+//                BitmapFactory.decodeStream(inputStream, null, bmOptions)
+//                inputStream?.close()
+//                inputStream = context.getContentResolver().openInputStream(imageUri)
+//            } catch (e: Throwable) {
+//                e.printStackTrace()
+//                return null
+//            }
+//        }
         val photoW = bmOptions.outWidth.toFloat()
         val photoH = bmOptions.outHeight.toFloat() // original photo. add log below
         var scaleFactor = if (useMaxScale) Math.max(
             photoW / maxWidth,
             photoH / maxHeight
-        ) else Math.min(photoW / maxWidth, photoH / maxHeight)
+        ) else min(photoW / maxWidth, photoH / maxHeight)
         if (scaleFactor < 1) {
             scaleFactor = 1f
         }
@@ -72,35 +73,33 @@ object ImageLoader {
             }
             bmOptions.inSampleSize = sample
         }
-        bmOptions.inPurgeable = Build.VERSION.SDK_INT < 21
-        var exifPath: String? = null
-        if (path != null) {
-            exifPath = path
-        } else if (uri != null) {
-            exifPath = BetterImageUtils.getImageFilePath(context, uri)
-        }
+//        var exifPath: String? = null
+//        if (path != null) {
+//            exifPath = path
+//        } else if (imageUri != null) {
+//            exifPath = BetterImageUtils.getImageFilePath(context, imageUri)
+//        }
         var matrix: Matrix? = null
-        if (exifPath != null) {
-            try {
-                val exif = ExifInterface(exifPath)
-                val orientation: Int = exif.getAttributeInt(
-                    ExifInterface.TAG_ORIENTATION,
-                    1
+        try {
+            val exif = ExifInterface(inputStream!!)
+            val orientation: Int = exif.getAttributeInt(
+                ExifInterface.TAG_ORIENTATION,
+                1
+            )
+            matrix = Matrix()
+            when (orientation) {
+                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(
+                    90f
                 )
-                matrix = Matrix()
-                when (orientation) {
-                    ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(
-                        90f
-                    )
-                    ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(
-                        180f
-                    )
-                    ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(
-                        270f
-                    )
-                }
-            } catch (ignore: Throwable) {
+                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(
+                    180f
+                )
+                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(
+                    270f
+                )
             }
+        } catch (e: Throwable) {
+            e.printStackTrace()
         }
         scaleFactor /= bmOptions.inSampleSize.toFloat()
         if (scaleFactor > 1) {
@@ -110,53 +109,53 @@ object ImageLoader {
             matrix.postScale(1.0f / scaleFactor, 1.0f / scaleFactor)
         }
         var b: Bitmap? = null
-        if (path != null) {
-            try {
-                b = BitmapFactory.decodeFile(path, bmOptions)
-                if (b != null) {
-                    // check bitmap before using matrix
-                    val newBitmap: Bitmap = Bitmap.createBitmap(
-                        b, 0, 0, b.width, b.height, matrix, true
-                    ) // new scaled bitmap using matrix
-//                    val newBitmap: Bitmap = Bitmaps.createBitmap(
+//        if (path != null) {
+//            try {
+//                b = BitmapFactory.decodeFile(path, bmOptions)
+//                if (b != null) {
+//                    // check bitmap before using matrix
+//                    val newBitmap: Bitmap = Bitmap.createBitmap(
 //                        b, 0, 0, b.width, b.height, matrix, true
 //                    ) // new scaled bitmap using matrix
-                    if (newBitmap != b) {
-                        b.recycle()
-                        b = newBitmap
-                    }
-                }
-            } catch (e: Throwable) {
-                e.printStackTrace()
-//                ImageLoader.getInstance().clearMemory()
-                try {
-                    if (b == null) {
-                        b = BitmapFactory.decodeFile(path, bmOptions)
-//                        if (b != null && bmOptions.inPurgeable) {
-//                            Utilities.pinBitmap(b)
-//                        }
-                    }
-                    if (b != null) {
-                        val newBitmap: Bitmap =
-                            Bitmap.createBitmap(b, 0, 0, b.width, b.height, matrix, true)
-                        if (newBitmap != b) {
-                            b.recycle()
-                            b = newBitmap
-                        }
-                    }
-                } catch (e2: Throwable) {
-                    e.printStackTrace()
-                }
-            }
-        } else if (uri != null) {
-            try {
-                b = BitmapFactory.decodeStream(inputStream, null, bmOptions)
-                if (b != null) {
-//                    if (bmOptions.inPurgeable) {
-//                        Utilities.pinBitmap(b)
+////                    val newBitmap: Bitmap = Bitmaps.createBitmap(
+////                        b, 0, 0, b.width, b.height, matrix, true
+////                    ) // new scaled bitmap using matrix
+//                    if (newBitmap != b) {
+//                        b.recycle()
+//                        b = newBitmap
 //                    }
-                    val newBitmap: Bitmap =
-                        Bitmap.createBitmap(b, 0, 0, b.width, b.height, matrix, true)
+//                }
+//            } catch (e: Throwable) {
+//                e.printStackTrace()
+//                ImageLoader.getInstance().clearMemory()
+//                try {
+//                    if (b == null) {
+//                        b = BitmapFactory.decodeFile(path, bmOptions)
+////                        if (b != null && bmOptions.inPurgeable) {
+////                            Utilities.pinBitmap(b)
+////                        }
+//                    }
+//                    if (b != null) {
+//                        val newBitmap: Bitmap =
+//                            Bitmap.createBitmap(b, 0, 0, b.width, b.height, matrix, true)
+//                        if (newBitmap != b) {
+//                            b.recycle()
+//                            b = newBitmap
+//                        }
+//                    }
+//                } catch (e2: Throwable) {
+//                    e.printStackTrace()
+//                }
+//            }
+//        } else if (imageUri != null) {
+        inputStream?.close()
+        val inputStream2: InputStream? = context.contentResolver.openInputStream(imageUri)
+            try {
+                b = BitmapFactory.decodeStream(inputStream2, null, bmOptions)
+                if (b != null) {
+                    val newBitmap: Bitmap = Bitmap.createBitmap(
+                        b, 0, 0, b.width, b.height, matrix, true
+                    )
                     if (newBitmap != b) {
                         b.recycle()
                         b = newBitmap
@@ -165,13 +164,9 @@ object ImageLoader {
             } catch (e: Throwable) {
                 e.printStackTrace()
             } finally {
-                try {
-                    inputStream!!.close()
-                } catch (e: Throwable) {
-                    e.printStackTrace()
-                }
+                inputStream?.close()
             }
-        }
+//        }
         return b
     }
 
