@@ -10,20 +10,6 @@ object ImageOptimizer {
 
     fun scaleAndSaveImage(
         bitmap: Bitmap?,
-        maxWidth: Float,
-        maxHeight: Float,
-        quality: Int,
-        minWidth: Int,
-        minHeight: Int
-    ): String? {
-        return scaleAndSaveImage(
-            bitmap, Bitmap.CompressFormat.JPEG, maxWidth, maxHeight,
-            quality, minWidth, minHeight
-        )
-    }
-
-    private fun scaleAndSaveImage(
-        bitmap: Bitmap?,
         compressFormat: Bitmap.CompressFormat?,
         maxWidth: Float,
         maxHeight: Float,
@@ -31,16 +17,14 @@ object ImageOptimizer {
         minWidth: Int,
         minHeight: Int
     ): String? {
-        if (bitmap == null) {
-            return null
-        }
+        bitmap ?: return null
         val photoW = bitmap.width.toFloat()
         val photoH = bitmap.height.toFloat()
         if (photoW == 0f || photoH == 0f) {
             return null
         }
         var scaleAnyway = false
-        var scaleFactor = Math.max(photoW / maxWidth, photoH / maxHeight)
+        var scaleFactor = max(photoW / maxWidth, photoH / maxHeight)
         if (minWidth != 0 && minHeight != 0 && (photoW < minWidth || photoH < minHeight)) {
             scaleFactor = if (photoW < minWidth && photoH > minHeight) {
                 photoW / minWidth
@@ -53,18 +37,10 @@ object ImageOptimizer {
         }
         val w = (photoW / scaleFactor).toInt()
         val h = (photoH / scaleFactor).toInt()
-        if (h == 0 || w == 0) {
-            null
-        } else try {
-            return scaleAndSaveImageInternal(
-                bitmap, compressFormat, w, h,
-                scaleFactor, quality, scaleAnyway
-            )
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-
-        return ""
+        return scaleAndSaveImageInternal(
+            bitmap, compressFormat, w, h,
+            scaleFactor, quality, scaleAnyway
+        )
     }
 
     private fun scaleAndSaveImageInternal(

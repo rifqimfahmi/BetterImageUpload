@@ -4,6 +4,7 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
 import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
@@ -100,7 +101,9 @@ class MainActivity : AppCompatActivity() {
             this, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
         )
         val optimizedImagePath = ImageOptimizer.scaleAndSaveImage(
-            scaledBitmap, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, 80, 101, 101
+            scaledBitmap, Bitmap.CompressFormat.JPEG,
+            MAX_PHOTO_SIZE, MAX_PHOTO_SIZE,
+            80, 101, 101
         ) ?: return
         val uri = Uri.fromFile(File(optimizedImagePath))
         val fileSize = updateImageMetaDataSize(uri)
