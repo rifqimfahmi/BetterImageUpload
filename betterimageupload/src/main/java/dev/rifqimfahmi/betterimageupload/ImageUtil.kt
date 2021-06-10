@@ -16,70 +16,32 @@ import kotlin.math.min
 
 object ImageUtil {
 
-    fun loadBitmap(
+    fun scaleBitmap(
         context: Context,
         imageUri: Uri,
         maxWidth: Float,
         maxHeight: Float,
         useMaxScale: Boolean
     ): Bitmap? {
-        val bmOptions = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-        }
-        val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
-        BitmapFactory.decodeStream(inputStream, null, bmOptions)
+        val bmOptions = decodeBitmapFromUri(context, imageUri)
         val photoW = bmOptions.outWidth.toFloat()
-        val photoH = bmOptions.outHeight.toFloat() // original photo. add log below
-        var scaleFactor = if (useMaxScale) Math.max(
-            photoW / maxWidth,
-            photoH / maxHeight
-        ) else min(photoW / maxWidth, photoH / maxHeight)
-        if (scaleFactor < 1) {
-            scaleFactor = 1f
-        }
-        bmOptions.inJustDecodeBounds = false
-        bmOptions.inSampleSize = scaleFactor.toInt()
-        if (bmOptions.inSampleSize % 2 != 0) { // check if sample size is divisible by 2
-            var sample = 1
-            while (sample * 2 < bmOptions.inSampleSize) {
-                sample *= 2
-            }
-            bmOptions.inSampleSize = sample
-        }
-        var matrix: Matrix? = null
-        try {
-            val exif = ExifInterface(inputStream!!)
-            val orientation: Int = exif.getAttributeInt(
-                ExifInterface.TAG_ORIENTATION,
-                1
-            )
-            matrix = Matrix()
-            when (orientation) {
-                ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(
-                    90f
-                )
-                ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(
-                    180f
-                )
-                ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(
-                    270f
-                )
-            }
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-        scaleFactor /= bmOptions.inSampleSize.toFloat()
-        if (scaleFactor > 1) {
-            if (matrix == null) {
-                matrix = Matrix()
-            }
-            matrix.postScale(1.0f / scaleFactor, 1.0f / scaleFactor)
-        }
+        val photoH = bmOptions.outHeight.toFloat()
+        val scaleFactor = calculateScaleFactor(useMaxScale, photoW, maxWidth, photoH, maxHeight)
+        calculateBmOptionInSampleSize(bmOptions, scaleFactor)
+        val matrix = calculateImageMatrix(context, imageUri, scaleFactor, bmOptions) ?: return null
+        return generateNewBitmap(context, imageUri, bmOptions, matrix)
+    }
+
+    private fun generateNewBitmap(
+        context: Context,
+        imageUri: Uri,
+        bmOptions: BitmapFactory.Options,
+        matrix: Matrix
+    ): Bitmap? {
         var bitmap: Bitmap? = null
-        inputStream?.close()
-        val inputStream2: InputStream? = context.contentResolver.openInputStream(imageUri)
+        val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
         try {
-            bitmap = BitmapFactory.decodeStream(inputStream2, null, bmOptions)
+            bitmap = BitmapFactory.decodeStream(inputStream, null, bmOptions)
             if (bitmap != null) {
                 val newBitmap: Bitmap = Bitmap.createBitmap(
                     bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
@@ -89,12 +51,90 @@ object ImageUtil {
                     bitmap = newBitmap
                 }
             }
+            inputStream?.close()
         } catch (e: Throwable) {
             e.printStackTrace()
-        } finally {
-            inputStream?.close()
         }
         return bitmap
+    }
+
+    private fun calculateImageMatrix(
+        context: Context,
+        imageUri: Uri,
+        scaleFactor: Float,
+        bmOptions: BitmapFactory.Options
+    ): Matrix? {
+        var scaleFactor1 = scaleFactor
+        val input: InputStream = context.contentResolver.openInputStream(imageUri) ?: return null
+        val exif = ExifInterface(input)
+        val matrix = Matrix()
+        val orientation: Int = exif.getAttributeInt(
+            ExifInterface.TAG_ORIENTATION,
+            ExifInterface.ORIENTATION_NORMAL
+        )
+        when (orientation) {
+            ExifInterface.ORIENTATION_ROTATE_90 -> matrix.postRotate(
+                90f
+            )
+            ExifInterface.ORIENTATION_ROTATE_180 -> matrix.postRotate(
+                180f
+            )
+            ExifInterface.ORIENTATION_ROTATE_270 -> matrix.postRotate(
+                270f
+            )
+        }
+
+        scaleFactor1 /= bmOptions.inSampleSize.toFloat()
+        if (scaleFactor1 > 1) {
+            matrix.postScale(1.0f / scaleFactor1, 1.0f / scaleFactor1)
+        }
+        input.close()
+        return matrix
+    }
+
+    private fun calculateBmOptionInSampleSize(
+        bmOptions: BitmapFactory.Options,
+        scaleFactor: Float
+    ) {
+        bmOptions.inJustDecodeBounds = false
+        bmOptions.inSampleSize = scaleFactor.toInt()
+        if (bmOptions.inSampleSize % 2 != 0) { // check if sample size is divisible by 2
+            var sample = 1
+            while (sample * 2 < bmOptions.inSampleSize) {
+                sample *= 2
+            }
+            bmOptions.inSampleSize = sample
+        }
+    }
+
+    private fun decodeBitmapFromUri(
+        context: Context,
+        imageUri: Uri
+    ): BitmapFactory.Options {
+        val bmOptions = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        val input: InputStream? = context.contentResolver.openInputStream(imageUri)
+        BitmapFactory.decodeStream(input, null, bmOptions)
+        input?.close()
+        return bmOptions
+    }
+
+    private fun calculateScaleFactor(
+        useMaxScale: Boolean,
+        photoW: Float,
+        maxWidth: Float,
+        photoH: Float,
+        maxHeight: Float
+    ): Float {
+        var scaleFactor = if (useMaxScale) max(
+            photoW / maxWidth,
+            photoH / maxHeight
+        ) else min(photoW / maxWidth, photoH / maxHeight)
+        if (scaleFactor < 1) {
+            scaleFactor = 1f
+        }
+        return scaleFactor
     }
 
     fun scaleAndSaveImage(
