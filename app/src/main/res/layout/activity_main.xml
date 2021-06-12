@@ -75,6 +75,17 @@
         app:layout_constraintTop_toBottomOf="@+id/original_image"
         tools:srcCompat="@tools:sample/avatars" />
 
+    <ProgressBar
+        android:id="@+id/pg_optimized"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:indeterminate="true"
+        android:visibility="gone"
+        app:layout_constraintBottom_toBottomOf="@+id/optimized_image"
+        app:layout_constraintLeft_toLeftOf="@+id/optimized_image"
+        app:layout_constraintRight_toRightOf="@+id/optimized_image"
+        app:layout_constraintTop_toTopOf="@+id/optimized_image" />
+
     <LinearLayout
         android:id="@+id/linearLayout2"
         android:layout_width="0dp"

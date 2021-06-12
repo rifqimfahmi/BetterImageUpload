@@ -39,6 +39,7 @@ class MainActivity : AppCompatActivity() {
     private var optimizedImg: ImageView? = null
     private var optimizedDimension: TextView? = null
     private var optimizedSize: TextView? = null
+    private var optimizedLoadingIndicator: ProgressBar? = null
     private var btnChooseImg: Button? = null
 
     // TODO: refactor use dependency injection
@@ -77,6 +78,7 @@ class MainActivity : AppCompatActivity() {
         optimizedImg = findViewById(R.id.optimized_image)
         optimizedDimension = findViewById(R.id.optimized_dimension)
         optimizedSize = findViewById(R.id.optimized_size)
+        optimizedLoadingIndicator = findViewById(R.id.pg_optimized)
     }
 
     private fun setupBtnChooseImg() {
@@ -115,6 +117,26 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private fun optimizeImageBeforeUpload(imageUri: Uri) {
+        coroutineScope.launch {
+            startLoadingOptimizedImage()
+            val ctx = this@MainActivity
+            val scaledBitmap = ImageScaler.scaleBitmap(
+                ctx, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
+            )
+            val optimizedImagePath = ImageOptimizer.scaleAndSaveImage(
+                scaledBitmap, Bitmap.CompressFormat.JPEG,
+                MAX_PHOTO_SIZE, MAX_PHOTO_SIZE,
+                80, 101, 101
+            ) ?: return@launch
+            val uri = Uri.fromFile(File(optimizedImagePath))
+            val fileSize = imageUtil.getImageFileSize(ctx, uri)
+            val bmOptions = imageUtil.decodeImageMetaData(ctx, uri)
+            stopLoadingOptimizedImage()
+            updateOptimizedOutputData(fileSize, bmOptions, uri)
+        }
+    }
+
     private suspend fun startLoadingOriginalImage() {
         withContext(Dispatchers.Main) {
             originalLoadingIndicator?.visibility = View.VISIBLE
@@ -145,26 +167,34 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
+    private suspend fun startLoadingOptimizedImage() {
+        withContext(Dispatchers.Main) {
+            optimizedImg?.setImageDrawable(null)
+            optimizedLoadingIndicator?.visibility = View.VISIBLE
+            optimizedSize?.text = "..calculating..."
+            optimizedDimension?.text = "..calculating..."
+        }
+    }
+
+    private suspend fun stopLoadingOptimizedImage() {
+        withContext(Dispatchers.Main) {
+            optimizedLoadingIndicator?.visibility = View.GONE
+            optimizedSize?.text = "-"
+            optimizedDimension?.text = "-"
+        }
+    }
+
     @SuppressLint("SetTextI18n")
-    private fun optimizeImageBeforeUpload(imageUri: Uri) {
-        coroutineScope.launch {
-            val ctx = this@MainActivity
-            val scaledBitmap = ImageScaler.scaleBitmap(
-                ctx, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
-            )
-            val optimizedImagePath = ImageOptimizer.scaleAndSaveImage(
-                scaledBitmap, Bitmap.CompressFormat.JPEG,
-                MAX_PHOTO_SIZE, MAX_PHOTO_SIZE,
-                80, 101, 101
-            ) ?: return@launch
-            val uri = Uri.fromFile(File(optimizedImagePath))
-            val fileSize = imageUtil.getImageFileSize(ctx, uri)
-            val bmOptions = imageUtil.decodeImageMetaData(ctx, uri) ?: return@launch
-            withContext(Dispatchers.Main) {
-                optimizedSize?.text = "${fileSize / 1024} KB"
-                optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
-                Glide.with(ctx).load(uri).into(optimizedImg!!)
-            }
+    private suspend fun updateOptimizedOutputData(
+        fileSize: Long,
+        bmOptions: BitmapFactory.Options?,
+        uri: Uri?
+    ) {
+        bmOptions ?: return
+        withContext(Dispatchers.Main) {
+            optimizedSize?.text = "${fileSize / 1024} KB"
+            optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
+            Glide.with(this@MainActivity).load(uri).into(optimizedImg!!)
         }
     }
 
