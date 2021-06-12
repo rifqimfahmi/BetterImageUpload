@@ -124,7 +124,7 @@ class MainActivity : AppCompatActivity() {
             val MAX_PHOTO_SIZE = 1280f
             val MIN_PHOTO_SIZE = 101
             val quality = 80
-            val scaledBitmap = ImageScaler.scaleBitmap(
+            val scaledBitmap = ImageScaler.createNewBitmap(
                 ctx, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
             )
             val optimizedImagePath = ImageOptimizer.scaleAndSaveImage(

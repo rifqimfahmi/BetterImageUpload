@@ -2,21 +2,17 @@ package dev.rifqimfahmi.betterimageupload
 
 import android.content.Context
 import android.graphics.Bitmap
-import android.graphics.Bitmap.CompressFormat
 import android.graphics.BitmapFactory
 import android.graphics.Matrix
 import android.net.Uri
 import androidx.exifinterface.media.ExifInterface
-import java.io.File
-import java.io.FileOutputStream
 import java.io.InputStream
-import java.util.*
 import kotlin.math.max
 import kotlin.math.min
 
 object ImageScaler {
 
-    fun scaleBitmap(
+    fun createNewBitmap(
         context: Context,
         imageUri: Uri,
         maxWidth: Float,
@@ -24,12 +20,59 @@ object ImageScaler {
         useMaxScale: Boolean
     ): Bitmap? {
         val bmOptions = decodeBitmapFromUri(context, imageUri)
-        val photoW = bmOptions.outWidth.toFloat()
-        val photoH = bmOptions.outHeight.toFloat()
-        val scaleFactor = calculateScaleFactor(useMaxScale, photoW, maxWidth, photoH, maxHeight)
+        val scaleFactor = calculateScaleFactor(bmOptions, useMaxScale, maxWidth, maxHeight)
         calculateBmOptionInSampleSize(bmOptions, scaleFactor)
         val matrix = calculateImageMatrix(context, imageUri, scaleFactor, bmOptions) ?: return null
         return generateNewBitmap(context, imageUri, bmOptions, matrix)
+    }
+
+    private fun decodeBitmapFromUri(
+        context: Context,
+        imageUri: Uri
+    ): BitmapFactory.Options {
+        val bmOptions = BitmapFactory.Options().apply {
+            inJustDecodeBounds = true
+        }
+        val input: InputStream? = context.contentResolver.openInputStream(imageUri)
+        BitmapFactory.decodeStream(input, null, bmOptions)
+        input?.close()
+        return bmOptions
+    }
+
+    private fun calculateScaleFactor(
+        bmOptions: BitmapFactory.Options,
+        useMaxScale: Boolean,
+        maxWidth: Float,
+        maxHeight: Float
+    ): Float {
+        val photoW = bmOptions.outWidth.toFloat()
+        val photoH = bmOptions.outHeight.toFloat()
+        val widthRatio = photoW / maxWidth
+        val heightRatio = photoH / maxHeight
+        var scaleFactor = if (useMaxScale) {
+            max(widthRatio, heightRatio)
+        } else {
+            min(widthRatio, heightRatio)
+        }
+        if (scaleFactor < 1) {
+            scaleFactor = 1f
+        }
+        return scaleFactor
+    }
+
+    private fun calculateBmOptionInSampleSize(
+        bmOptions: BitmapFactory.Options,
+        scaleFactor: Float
+    ) {
+        bmOptions.inJustDecodeBounds = false
+        bmOptions.inSampleSize = scaleFactor.toInt()
+        if (bmOptions.inSampleSize % 2 != 0) { // check if sample size is divisible by 2
+            var sample = 1
+            while (sample * 2 < bmOptions.inSampleSize) {
+                sample *= 2
+            }
+            bmOptions.inSampleSize = sample
+        }
     }
 
     private fun generateNewBitmap(
@@ -64,7 +107,7 @@ object ImageScaler {
         scaleFactor: Float,
         bmOptions: BitmapFactory.Options
     ): Matrix? {
-        var scaleFactor1 = scaleFactor
+        var remainingScaleFactor = scaleFactor
         val input: InputStream = context.contentResolver.openInputStream(imageUri) ?: return null
         val exif = ExifInterface(input)
         val matrix = Matrix()
@@ -84,57 +127,12 @@ object ImageScaler {
             )
         }
 
-        scaleFactor1 /= bmOptions.inSampleSize.toFloat()
-        if (scaleFactor1 > 1) {
-            matrix.postScale(1.0f / scaleFactor1, 1.0f / scaleFactor1)
+        remainingScaleFactor /= bmOptions.inSampleSize.toFloat()
+        if (remainingScaleFactor > 1) {
+            matrix.postScale(1.0f / remainingScaleFactor, 1.0f / remainingScaleFactor)
         }
         input.close()
         return matrix
-    }
-
-    private fun calculateBmOptionInSampleSize(
-        bmOptions: BitmapFactory.Options,
-        scaleFactor: Float
-    ) {
-        bmOptions.inJustDecodeBounds = false
-        bmOptions.inSampleSize = scaleFactor.toInt()
-        if (bmOptions.inSampleSize % 2 != 0) { // check if sample size is divisible by 2
-            var sample = 1
-            while (sample * 2 < bmOptions.inSampleSize) {
-                sample *= 2
-            }
-            bmOptions.inSampleSize = sample
-        }
-    }
-
-    private fun decodeBitmapFromUri(
-        context: Context,
-        imageUri: Uri
-    ): BitmapFactory.Options {
-        val bmOptions = BitmapFactory.Options().apply {
-            inJustDecodeBounds = true
-        }
-        val input: InputStream? = context.contentResolver.openInputStream(imageUri)
-        BitmapFactory.decodeStream(input, null, bmOptions)
-        input?.close()
-        return bmOptions
-    }
-
-    private fun calculateScaleFactor(
-        useMaxScale: Boolean,
-        photoW: Float,
-        maxWidth: Float,
-        photoH: Float,
-        maxHeight: Float
-    ): Float {
-        var scaleFactor = if (useMaxScale) max(
-            photoW / maxWidth,
-            photoH / maxHeight
-        ) else min(photoW / maxWidth, photoH / maxHeight)
-        if (scaleFactor < 1) {
-            scaleFactor = 1f
-        }
-        return scaleFactor
     }
 
 }
