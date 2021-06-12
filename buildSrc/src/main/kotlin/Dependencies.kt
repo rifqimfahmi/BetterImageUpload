@@ -1,6 +1,7 @@
 object Versions {
-    const val kotlin = "1.4.31"
     const val androidGradlePlugin = "4.2.1"
+    const val kotlin = "1.4.31"
+    const val kotlinCoroutine = "1.3.9"
 
     const val androidxCoreKtx = "1.5.0"
     const val androidX = "1.3.0"
@@ -15,6 +16,7 @@ object Dependencies {
     const val kotlinGradlePlugin = "org.jetbrains.kotlin:kotlin-gradle-plugin:${Versions.kotlin}"
 
     const val kotlinStandardLibrary = "org.jetbrains.kotlin:kotlin-stdlib:${Versions.kotlin}"
+    const val kotlinCoroutine = "org.jetbrains.kotlinx:kotlinx-coroutines-android:${Versions.kotlinCoroutine}"
     const val androidxCoreKtx = "androidx.core:core-ktx:${Versions.androidxCoreKtx}"
     const val androidxAppcompat = "androidx.appcompat:appcompat:${Versions.androidX}"
     const val googleMaterialDesign = "com.google.android.material:material:${Versions.androidX}"

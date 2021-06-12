@@ -35,4 +35,5 @@ android {
 dependencies {
     implementation Dependencies.kotlinStandardLibrary
     implementation Dependencies.androidxExifInterface
+    implementation Dependencies.kotlinCoroutine
 }
