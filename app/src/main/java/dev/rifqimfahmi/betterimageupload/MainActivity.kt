@@ -121,13 +121,17 @@ class MainActivity : AppCompatActivity() {
         coroutineScope.launch {
             startLoadingOptimizedImage()
             val ctx = this@MainActivity
+            val MAX_PHOTO_SIZE = 1280f
+            val MIN_PHOTO_SIZE = 101
+            val quality = 80
             val scaledBitmap = ImageScaler.scaleBitmap(
                 ctx, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
             )
             val optimizedImagePath = ImageOptimizer.scaleAndSaveImage(
                 scaledBitmap, Bitmap.CompressFormat.JPEG,
                 MAX_PHOTO_SIZE, MAX_PHOTO_SIZE,
-                80, 101, 101
+                quality,
+                MIN_PHOTO_SIZE, MIN_PHOTO_SIZE
             ) ?: return@launch
             val uri = Uri.fromFile(File(optimizedImagePath))
             val fileSize = imageUtil.getImageFileSize(ctx, uri)
@@ -224,6 +228,5 @@ class MainActivity : AppCompatActivity() {
     companion object {
         const val REQUEST_SELECT_PICTURE = 1
         const val REQUEST_EXTERNAL_STORAGE = 2
-        const val MAX_PHOTO_SIZE: Float = 1280f
     }
 }
