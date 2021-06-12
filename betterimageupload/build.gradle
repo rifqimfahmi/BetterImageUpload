@@ -34,7 +34,5 @@ android {
 
 dependencies {
     implementation Dependencies.kotlinStandardLibrary
-    implementation Dependencies.androidxCoreKtx
-    implementation Dependencies.androidxAppcompat
     implementation Dependencies.androidxExifInterface
 }
