@@ -2,13 +2,17 @@ package dev.rifqimfahmi.betterimageupload
 
 import android.Manifest
 import android.annotation.SuppressLint
+import android.content.Context
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
+import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
+import android.view.View
 import android.widget.Button
 import android.widget.ImageView
+import android.widget.ProgressBar
 import android.widget.TextView
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
@@ -31,6 +35,7 @@ class MainActivity : AppCompatActivity() {
     private var originalImg: ImageView? = null
     private var originalDimension: TextView? = null
     private var originalSize: TextView? = null
+    private var originalLoadingIndicator: ProgressBar? = null
     private var optimizedImg: ImageView? = null
     private var optimizedDimension: TextView? = null
     private var optimizedSize: TextView? = null
@@ -68,6 +73,7 @@ class MainActivity : AppCompatActivity() {
         originalImg = findViewById(R.id.original_image)
         originalDimension = findViewById(R.id.original_dimension)
         originalSize = findViewById(R.id.original_size)
+        originalLoadingIndicator = findViewById(R.id.pg_original)
         optimizedImg = findViewById(R.id.optimized_image)
         optimizedDimension = findViewById(R.id.optimized_dimension)
         optimizedSize = findViewById(R.id.optimized_size)
@@ -98,17 +104,44 @@ class MainActivity : AppCompatActivity() {
         optimizeImageBeforeUpload(imageUri)
     }
 
-    @SuppressLint("SetTextI18n")
     private fun loadOriginalImage(imageUri: Uri) {
         coroutineScope.launch {
-            val ctx = this@MainActivity
+            startLoadingOriginalImage()
+            val ctx: Context = this@MainActivity
             val fileSize = imageUtil.getImageFileSize(ctx, imageUri)
-            val bitmap = imageUtil.decodeImageMetaData(ctx, imageUri) ?: return@launch
-            withContext(Dispatchers.Main) {
-                originalSize?.text = "${fileSize / 1024} KB"
-                originalDimension?.text = "${bitmap.outWidth}x${bitmap.outHeight}"
-                Glide.with(ctx).load(imageUri).into(originalImg!!)
-            }
+            val bitmap = imageUtil.decodeImageMetaData(ctx, imageUri)
+            stopLoadingOriginalImage()
+            updateOriginalInputData(fileSize, bitmap, imageUri)
+        }
+    }
+
+    private suspend fun startLoadingOriginalImage() {
+        withContext(Dispatchers.Main) {
+            originalLoadingIndicator?.visibility = View.VISIBLE
+            originalSize?.text = "..calculating..."
+            originalDimension?.text = "..calculating..."
+        }
+    }
+
+    private suspend fun stopLoadingOriginalImage() {
+        withContext(Dispatchers.Main) {
+            originalLoadingIndicator?.visibility = View.GONE
+            originalSize?.text = "-"
+            originalDimension?.text = "-"
+        }
+    }
+
+    @SuppressLint("SetTextI18n")
+    private suspend fun updateOriginalInputData(
+        fileSize: Long,
+        bitmap: BitmapFactory.Options?,
+        imageUri: Uri
+    ) {
+        bitmap ?: return
+        withContext(Dispatchers.Main) {
+            originalSize?.text = "${fileSize / 1024} KB"
+            originalDimension?.text = "${bitmap.outWidth}x${bitmap.outHeight}"
+            Glide.with(this@MainActivity).load(imageUri).into(originalImg!!)
         }
     }
 
