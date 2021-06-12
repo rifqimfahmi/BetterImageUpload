@@ -5,7 +5,6 @@ import android.annotation.SuppressLint
 import android.content.Intent
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
-import android.graphics.BitmapFactory
 import android.net.Uri
 import android.os.Bundle
 import android.widget.Button
@@ -15,9 +14,11 @@ import androidx.appcompat.app.AppCompatActivity
 import androidx.core.app.ActivityCompat
 import androidx.core.content.ContextCompat
 import com.bumptech.glide.Glide
+import dev.rifqimfahmi.betterimageupload.util.DefaultImageUtil
+import dev.rifqimfahmi.betterimageupload.util.ImageUtil
+import kotlinx.coroutines.*
 import java.io.File
-import java.io.FileInputStream
-import java.io.InputStream
+import kotlin.coroutines.CoroutineContext
 
 
 class MainActivity : AppCompatActivity() {
@@ -27,21 +28,32 @@ class MainActivity : AppCompatActivity() {
         Manifest.permission.WRITE_EXTERNAL_STORAGE
     )
 
-    private var btnChooseImg: Button? = null
-
     private var originalImg: ImageView? = null
     private var originalDimension: TextView? = null
     private var originalSize: TextView? = null
-
     private var optimizedImg: ImageView? = null
     private var optimizedDimension: TextView? = null
     private var optimizedSize: TextView? = null
+    private var btnChooseImg: Button? = null
+
+    // TODO: refactor use dependency injection
+    private val imageUtil: ImageUtil = DefaultImageUtil()
+
+    private val coroutineScope = object : CoroutineScope {
+        override val coroutineContext: CoroutineContext
+            get() = SupervisorJob() + Dispatchers.IO
+    }
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
         bindView()
         setupBtnChooseImg()
+    }
+
+    override fun onDestroy() {
+        super.onDestroy()
+        coroutineScope.cancel()
     }
 
     override fun onActivityResult(requestCode: Int, resultCode: Int, data: Intent?) {
@@ -88,59 +100,39 @@ class MainActivity : AppCompatActivity() {
 
     @SuppressLint("SetTextI18n")
     private fun loadOriginalImage(imageUri: Uri) {
-        val fileSize = updateImageMetaDataSize(imageUri)
-        val bitmap = updateImageMetaDataDimension(imageUri) ?: return
-        originalSize?.text = "${fileSize / 1024} KB"
-        originalDimension?.text = "${bitmap.outWidth}x${bitmap.outHeight}"
-        Glide.with(this).load(imageUri).into(originalImg!!)
+        coroutineScope.launch {
+            val ctx = this@MainActivity
+            val fileSize = imageUtil.getImageFileSize(ctx, imageUri)
+            val bitmap = imageUtil.decodeImageMetaData(ctx, imageUri) ?: return@launch
+            withContext(Dispatchers.Main) {
+                originalSize?.text = "${fileSize / 1024} KB"
+                originalDimension?.text = "${bitmap.outWidth}x${bitmap.outHeight}"
+                Glide.with(ctx).load(imageUri).into(originalImg!!)
+            }
+        }
     }
 
     @SuppressLint("SetTextI18n")
     private fun optimizeImageBeforeUpload(imageUri: Uri) {
-        val scaledBitmap = ImageScaler.scaleBitmap(
-            this, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
-        )
-        val optimizedImagePath = ImageOptimizer.scaleAndSaveImage(
-            scaledBitmap, Bitmap.CompressFormat.JPEG,
-            MAX_PHOTO_SIZE, MAX_PHOTO_SIZE,
-            80, 101, 101
-        ) ?: return
-        val uri = Uri.fromFile(File(optimizedImagePath))
-        val fileSize = updateImageMetaDataSize(uri)
-        val bmOptions = updateImageMetaDataDimension(uri) ?: return
-        optimizedSize?.text = "${fileSize / 1024} KB"
-        optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
-        Glide.with(this).load(uri).into(optimizedImg!!)
-    }
-
-    private fun updateImageMetaDataSize(imageUri: Uri): Long {
-        var input: FileInputStream? = null
-        try {
-            input = contentResolver.openInputStream(imageUri) as FileInputStream
-            return input.channel.size()
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            input?.close()
-        }
-        return 0
-    }
-
-    private fun updateImageMetaDataDimension(imageUri: Uri): BitmapFactory.Options? {
-        var input: InputStream? = null
-        try {
-            val bmOptions = BitmapFactory.Options().apply {
-                inJustDecodeBounds = true
+        coroutineScope.launch {
+            val ctx = this@MainActivity
+            val scaledBitmap = ImageScaler.scaleBitmap(
+                ctx, imageUri, MAX_PHOTO_SIZE, MAX_PHOTO_SIZE, true
+            )
+            val optimizedImagePath = ImageOptimizer.scaleAndSaveImage(
+                scaledBitmap, Bitmap.CompressFormat.JPEG,
+                MAX_PHOTO_SIZE, MAX_PHOTO_SIZE,
+                80, 101, 101
+            ) ?: return@launch
+            val uri = Uri.fromFile(File(optimizedImagePath))
+            val fileSize = imageUtil.getImageFileSize(ctx, uri)
+            val bmOptions = imageUtil.decodeImageMetaData(ctx, uri) ?: return@launch
+            withContext(Dispatchers.Main) {
+                optimizedSize?.text = "${fileSize / 1024} KB"
+                optimizedDimension?.text = "${bmOptions.outWidth}x${bmOptions.outHeight}"
+                Glide.with(ctx).load(uri).into(optimizedImg!!)
             }
-            input = contentResolver.openInputStream(imageUri)
-            BitmapFactory.decodeStream(input, null, bmOptions)
-            return bmOptions
-        } catch (e: Exception) {
-            e.printStackTrace()
-        } finally {
-            input?.close()
         }
-        return null
     }
 
     private fun isPermissionGranted(): Boolean {

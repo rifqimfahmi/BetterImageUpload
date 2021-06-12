@@ -35,6 +35,7 @@ android {
 
 dependencies {
     implementation Dependencies.kotlinStandardLibrary
+    implementation Dependencies.kotlinCoroutine
     implementation Dependencies.androidxCoreKtx
     implementation Dependencies.androidxAppcompat
     implementation Dependencies.androidxConstraintLayout
