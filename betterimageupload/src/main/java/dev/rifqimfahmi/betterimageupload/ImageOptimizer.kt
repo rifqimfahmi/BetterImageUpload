@@ -26,9 +26,25 @@ object ImageOptimizer {
         minWidth: Int,
         minHeight: Int
     ): String? {
-        val bmOptions = decodeBitmapFromUri(context, imageUri)
-        val scaleFactor = calculateScaleFactor(bmOptions, useMaxScale, maxWidth, maxHeight)
-        calculateBmOptionInSampleSize(bmOptions, scaleFactor)
+        /**
+         * Decode uri bitmap from activity result using content provider
+         */
+        val bmOptions: BitmapFactory.Options = decodeBitmapFromUri(context, imageUri)
+
+        /**
+         * Calculate scale factor of the bitmap relative to [maxWidth] and [maxHeight]
+         */
+        val scaleFactor: Float = calculateScaleFactor(bmOptions, useMaxScale, maxWidth, maxHeight)
+
+        /**
+         * Since [BitmapFactory.Options.inSampleSize] only accept multiples of two, we calculate
+         * the nearest power of 2 to the previously calculated scaleFactor
+         */
+        setNearestInSampleSize(bmOptions, scaleFactor)
+
+        /**
+         *
+         */
         val matrix = calculateImageMatrix(context, imageUri, scaleFactor, bmOptions) ?: return null
         val newBitmap = generateNewBitmap(context, imageUri, bmOptions, matrix) ?: return null
         val pair = finalizeScaleFactor(
@@ -110,7 +126,7 @@ object ImageOptimizer {
         return scaleFactor
     }
 
-    private fun calculateBmOptionInSampleSize(
+    private fun setNearestInSampleSize(
         bmOptions: BitmapFactory.Options,
         scaleFactor: Float
     ) {
