@@ -43,10 +43,20 @@ object ImageOptimizer {
         setNearestInSampleSize(bmOptions, scaleFactor)
 
         /**
-         *
+         * 2 things we do here with image matrix:
+         * - Adjust image rotation
+         * - Scale image matrix based on remaining [scaleFactor / bmOption.inSampleSize]
          */
-        val matrix = calculateImageMatrix(context, imageUri, scaleFactor, bmOptions) ?: return null
+        val matrix: Matrix = calculateImageMatrix(
+            context, imageUri, scaleFactor, bmOptions
+        ) ?: return null
+
+        /**
+         * Create new bitmap based on defined bmOptions and calculated matrix
+         */
         val newBitmap = generateNewBitmap(context, imageUri, bmOptions, matrix) ?: return null
+
+
         val pair = finalizeScaleFactor(
             bmOptions, maxWidth, maxHeight, minWidth, minHeight
         )
@@ -173,7 +183,6 @@ object ImageOptimizer {
         scaleFactor: Float,
         bmOptions: BitmapFactory.Options
     ): Matrix? {
-        var remainingScaleFactor = scaleFactor
         val input: InputStream = context.contentResolver.openInputStream(imageUri) ?: return null
         val exif = ExifInterface(input)
         val matrix = Matrix()
@@ -192,8 +201,7 @@ object ImageOptimizer {
                 270f
             )
         }
-
-        remainingScaleFactor /= bmOptions.inSampleSize.toFloat()
+        val remainingScaleFactor = scaleFactor / bmOptions.inSampleSize.toFloat()
         if (remainingScaleFactor > 1) {
             matrix.postScale(1.0f / remainingScaleFactor, 1.0f / remainingScaleFactor)
         }
