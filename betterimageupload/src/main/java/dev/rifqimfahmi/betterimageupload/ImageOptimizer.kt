@@ -39,6 +39,7 @@ object ImageOptimizer {
         /**
          * Since [BitmapFactory.Options.inSampleSize] only accept multiples of two, we calculate
          * the nearest power of 2 to the previously calculated scaleFactor
+         * check doc [BitmapFactory.Options.inSampleSize]
          */
         setNearestInSampleSize(bmOptions, scaleFactor)
 
@@ -88,9 +89,9 @@ object ImageOptimizer {
         val photoW = bmOptions.outWidth.toFloat()
         val photoH = bmOptions.outHeight.toFloat()
         var scaleAnyway = false
-        var scaleFactor2 = max(photoW / maxWidth, photoH / maxHeight)
+        var scaleFactor = max(photoW / maxWidth, photoH / maxHeight)
         if (minWidth != 0 && minHeight != 0 && (photoW < minWidth || photoH < minHeight)) {
-            scaleFactor2 = if (photoW < minWidth && photoH > minHeight) {
+            scaleFactor = if (photoW < minWidth && photoH > minHeight) {
                 photoW / minWidth
             } else if (photoW > minWidth && photoH < minHeight) {
                 photoH / minHeight
@@ -99,7 +100,7 @@ object ImageOptimizer {
             }
             scaleAnyway = true
         }
-        return Pair(scaleFactor2, scaleAnyway)
+        return Pair(scaleFactor, scaleAnyway)
     }
 
     private fun decodeBitmapFromUri(
