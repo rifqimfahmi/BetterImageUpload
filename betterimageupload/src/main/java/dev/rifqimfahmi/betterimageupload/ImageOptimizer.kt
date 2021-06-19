@@ -104,47 +104,6 @@ object ImageOptimizer {
         )
     }
 
-    private fun finalWidth(bmOptions: BitmapFactory.Options, scaleFactor2: Float): Int {
-        return (bmOptions.outWidth.toFloat() / scaleFactor2).toInt()
-    }
-
-    private fun finalHeight(bmOptions: BitmapFactory.Options, scaleFactor2: Float): Int {
-        return (bmOptions.outHeight.toFloat() / scaleFactor2).toInt()
-    }
-
-    private fun finalizeScaleFactor(
-        bmOptions: BitmapFactory.Options,
-        maxWidth: Float,
-        maxHeight: Float,
-        minWidth: Int,
-        minHeight: Int,
-        shouldScaleUp: Boolean
-    ): Float {
-        val photoW = bmOptions.outWidth.toFloat()
-        val photoH = bmOptions.outHeight.toFloat()
-        var scaleFactor = max(photoW / maxWidth, photoH / maxHeight)
-        if (shouldScaleUp) {
-            scaleFactor = if (photoW < minWidth && photoH > minHeight) {
-                photoW / minWidth
-            } else if (photoW > minWidth && photoH < minHeight) {
-                photoH / minHeight
-            } else {
-                max(photoW / minWidth, photoH / minHeight)
-            }
-        }
-        return scaleFactor
-    }
-
-    private fun shouldScaleUp(
-        bmOptions: BitmapFactory.Options,
-        minWidth: Int,
-        minHeight: Int
-    ): Boolean {
-        val photoW = bmOptions.outWidth.toFloat()
-        val photoH = bmOptions.outHeight.toFloat()
-        return (minWidth != 0 && minHeight != 0 && (photoW < minWidth || photoH < minHeight))
-    }
-
     private fun decodeBitmapFromUri(
         context: Context,
         imageUri: Uri
@@ -194,32 +153,6 @@ object ImageOptimizer {
         }
     }
 
-    private fun generateNewBitmap(
-        context: Context,
-        imageUri: Uri,
-        bmOptions: BitmapFactory.Options,
-        matrix: Matrix
-    ): Bitmap? {
-        var bitmap: Bitmap? = null
-        val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
-        try {
-            bitmap = BitmapFactory.decodeStream(inputStream, null, bmOptions)
-            if (bitmap != null) {
-                val newBitmap: Bitmap = Bitmap.createBitmap(
-                    bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
-                )
-                if (newBitmap != bitmap) {
-                    bitmap.recycle()
-                    bitmap = newBitmap
-                }
-            }
-            inputStream?.close()
-        } catch (e: Throwable) {
-            e.printStackTrace()
-        }
-        return bitmap
-    }
-
     private fun calculateImageMatrix(
         context: Context,
         imageUri: Uri,
@@ -250,6 +183,73 @@ object ImageOptimizer {
         }
         input.close()
         return matrix
+    }
+
+    private fun generateNewBitmap(
+        context: Context,
+        imageUri: Uri,
+        bmOptions: BitmapFactory.Options,
+        matrix: Matrix
+    ): Bitmap? {
+        var bitmap: Bitmap? = null
+        val inputStream: InputStream? = context.contentResolver.openInputStream(imageUri)
+        try {
+            bitmap = BitmapFactory.decodeStream(inputStream, null, bmOptions)
+            if (bitmap != null) {
+                val newBitmap: Bitmap = Bitmap.createBitmap(
+                    bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
+                )
+                if (newBitmap != bitmap) {
+                    bitmap.recycle()
+                    bitmap = newBitmap
+                }
+            }
+            inputStream?.close()
+        } catch (e: Throwable) {
+            e.printStackTrace()
+        }
+        return bitmap
+    }
+
+    private fun shouldScaleUp(
+        bmOptions: BitmapFactory.Options,
+        minWidth: Int,
+        minHeight: Int
+    ): Boolean {
+        val photoW = bmOptions.outWidth.toFloat()
+        val photoH = bmOptions.outHeight.toFloat()
+        return (minWidth != 0 && minHeight != 0 && (photoW < minWidth || photoH < minHeight))
+    }
+
+    private fun finalizeScaleFactor(
+        bmOptions: BitmapFactory.Options,
+        maxWidth: Float,
+        maxHeight: Float,
+        minWidth: Int,
+        minHeight: Int,
+        shouldScaleUp: Boolean
+    ): Float {
+        val photoW = bmOptions.outWidth.toFloat()
+        val photoH = bmOptions.outHeight.toFloat()
+        var scaleFactor = max(photoW / maxWidth, photoH / maxHeight)
+        if (shouldScaleUp) {
+            scaleFactor = if (photoW < minWidth && photoH > minHeight) {
+                photoW / minWidth
+            } else if (photoW > minWidth && photoH < minHeight) {
+                photoH / minHeight
+            } else {
+                max(photoW / minWidth, photoH / minHeight)
+            }
+        }
+        return scaleFactor
+    }
+
+    private fun finalWidth(bmOptions: BitmapFactory.Options, scaleFactor2: Float): Int {
+        return (bmOptions.outWidth.toFloat() / scaleFactor2).toInt()
+    }
+
+    private fun finalHeight(bmOptions: BitmapFactory.Options, scaleFactor2: Float): Int {
+        return (bmOptions.outHeight.toFloat() / scaleFactor2).toInt()
     }
 
     private fun scaleCompressAndSaveImageInternal(
