@@ -15,6 +15,20 @@ import kotlin.math.min
 
 object ImageOptimizer {
 
+    /**
+     * @param context the application environment
+     * @param imageUri the input image uri. usually "content://..."
+     * @param compressFormat the output image file format
+     * @param maxWidth the output image max width
+     * @param maxHeight the output image max height
+     * @param useMaxScale determine whether to use the bigger dimension
+     * between [maxWidth] or [maxHeight]
+     * @param quality the output image compress quality
+     * @param minWidth the output image min width
+     * @param minHeight the output image min height
+     *
+     * @return the absolute file path of the scaled and optimized input image
+     */
     fun optimize(
         context: Context,
         imageUri: Uri,
@@ -55,19 +69,38 @@ object ImageOptimizer {
         /**
          * Create new bitmap based on defined bmOptions and calculated matrix
          */
-        val newBitmap = generateNewBitmap(context, imageUri, bmOptions, matrix) ?: return null
+        val newBitmap: Bitmap = generateNewBitmap(
+            context, imageUri, bmOptions, matrix
+        ) ?: return null
 
-
-        val pair = finalizeScaleFactor(
-            bmOptions, maxWidth, maxHeight, minWidth, minHeight
+        /**
+         * Determine whether to scale up the image or not if the
+         * image width and height is below minimum dimension
+         */
+        val shouldScaleUp: Boolean = shouldScaleUp(
+            bmOptions, minWidth, minHeight
         )
-        val scaleFactor2 = pair.first
-        val scaleAnyway = pair.second
-        val finalWidth = finalWidth(bmOptions, scaleFactor2)
-        val finalHeight = finalHeight(bmOptions, scaleFactor2)
-        return scaleAndSaveImageInternal(
+
+        /**
+         * Calculate the final [scaleFactor] to match the maxWidth and maxHeight
+         * whoever has the highest [scaleFactor] first
+         */
+        val finalScaleFactor: Float = finalizeScaleFactor(
+            bmOptions, maxWidth, maxHeight, minWidth, minHeight, shouldScaleUp
+        )
+
+        /**
+         * calculate the final width and height based on final scale factor
+         */
+        val finalWidth: Int = finalWidth(bmOptions, finalScaleFactor)
+        val finalHeight: Int = finalHeight(bmOptions, finalScaleFactor)
+
+        /**
+         * scale, compress, and save image
+         */
+        return scaleCompressAndSaveImageInternal(
             newBitmap, compressFormat, finalWidth, finalHeight,
-            scaleFactor2, quality, scaleAnyway
+            finalScaleFactor, quality, shouldScaleUp
         )
     }
 
@@ -84,13 +117,13 @@ object ImageOptimizer {
         maxWidth: Float,
         maxHeight: Float,
         minWidth: Int,
-        minHeight: Int
-    ): Pair<Float, Boolean> {
+        minHeight: Int,
+        shouldScaleUp: Boolean
+    ): Float {
         val photoW = bmOptions.outWidth.toFloat()
         val photoH = bmOptions.outHeight.toFloat()
-        var scaleAnyway = false
         var scaleFactor = max(photoW / maxWidth, photoH / maxHeight)
-        if (minWidth != 0 && minHeight != 0 && (photoW < minWidth || photoH < minHeight)) {
+        if (shouldScaleUp) {
             scaleFactor = if (photoW < minWidth && photoH > minHeight) {
                 photoW / minWidth
             } else if (photoW > minWidth && photoH < minHeight) {
@@ -98,9 +131,18 @@ object ImageOptimizer {
             } else {
                 max(photoW / minWidth, photoH / minHeight)
             }
-            scaleAnyway = true
         }
-        return Pair(scaleFactor, scaleAnyway)
+        return scaleFactor
+    }
+
+    private fun shouldScaleUp(
+        bmOptions: BitmapFactory.Options,
+        minWidth: Int,
+        minHeight: Int
+    ): Boolean {
+        val photoW = bmOptions.outWidth.toFloat()
+        val photoH = bmOptions.outHeight.toFloat()
+        return (minWidth != 0 && minHeight != 0 && (photoW < minWidth || photoH < minHeight))
     }
 
     private fun decodeBitmapFromUri(
@@ -210,16 +252,16 @@ object ImageOptimizer {
         return matrix
     }
 
-    private fun scaleAndSaveImageInternal(
+    private fun scaleCompressAndSaveImageInternal(
         bitmap: Bitmap,
         compressFormat: Bitmap.CompressFormat?,
         w: Int,
         h: Int,
         scaleFactor: Float,
         quality: Int,
-        scaleAnyway: Boolean
+        isScaleUp: Boolean
     ): String? {
-        val scaledBitmap: Bitmap = if (scaleFactor > 1 || scaleAnyway) {
+        val scaledBitmap: Bitmap = if (scaleFactor > 1 || isScaleUp) {
             Bitmap.createScaledBitmap(bitmap, w, h, true)
         } else {
             bitmap
