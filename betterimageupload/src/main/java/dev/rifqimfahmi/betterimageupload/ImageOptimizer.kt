@@ -39,7 +39,7 @@ object ImageOptimizer {
         quality: Int,
         minWidth: Int,
         minHeight: Int
-    ): String? {
+    ): Uri? {
         /**
          * Decode uri bitmap from activity result using content provider
          */
@@ -98,10 +98,12 @@ object ImageOptimizer {
         /**
          * scale, compress, and save image
          */
-        return scaleCompressAndSaveImageInternal(
+        val imageFilePath: String = scaleCompressAndSaveImageInternal(
             newBitmap, compressFormat, finalWidth, finalHeight,
             finalScaleFactor, quality, shouldScaleUp
-        )
+        ) ?: return null
+
+        return Uri.fromFile(File(imageFilePath))
     }
 
     private fun decodeBitmapFromUri(
