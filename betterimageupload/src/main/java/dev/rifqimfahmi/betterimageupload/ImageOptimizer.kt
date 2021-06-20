@@ -27,7 +27,7 @@ object ImageOptimizer {
      * @param minWidth the output image min width
      * @param minHeight the output image min height
      *
-     * @return the absolute file path of the scaled and optimized input image
+     * @return output image [android.net.Uri]
      */
     fun optimize(
         context: Context,
