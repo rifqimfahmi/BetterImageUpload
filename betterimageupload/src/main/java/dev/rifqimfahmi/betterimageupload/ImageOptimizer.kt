@@ -51,8 +51,8 @@ object ImageOptimizer {
         val scaleFactor: Float = calculateScaleFactor(bmOptions, useMaxScale, maxWidth, maxHeight)
 
         /**
-         * Since [BitmapFactory.Options.inSampleSize] only accept multiples of two, we calculate
-         * the nearest power of 2 to the previously calculated scaleFactor
+         * Since [BitmapFactory.Options.inSampleSize] only accept value with power of 2,
+         * we calculate the nearest power of 2 to the previously calculated scaleFactor
          * check doc [BitmapFactory.Options.inSampleSize]
          */
         setNearestInSampleSize(bmOptions, scaleFactor)
