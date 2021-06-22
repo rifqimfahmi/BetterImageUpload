@@ -84,8 +84,7 @@ object ImageOptimizer {
         )
 
         /**
-         * Calculate the final [scaleFactor] to match the maxWidth and maxHeight
-         * whoever has the highest [scaleFactor] first
+         * Calculate the final [scaleFactor] if the image need to scaled up.
          */
         val finalScaleFactor: Float = finalizeScaleFactor(
             newBitmapWidth.toFloat(), newBitmapHeight.toFloat(), maxWidth, maxHeight,
