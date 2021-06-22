@@ -198,12 +198,12 @@ object ImageOptimizer {
         try {
             bitmap = BitmapFactory.decodeStream(inputStream, null, bmOptions)
             if (bitmap != null) {
-                val newBitmap: Bitmap = Bitmap.createBitmap(
+                val matrixScaledBitmap: Bitmap = Bitmap.createBitmap(
                     bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
                 )
-                if (newBitmap != bitmap) {
+                if (matrixScaledBitmap != bitmap) {
                     bitmap.recycle()
-                    bitmap = newBitmap
+                    bitmap = matrixScaledBitmap
                 }
             }
             inputStream?.close()
