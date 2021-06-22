@@ -48,7 +48,9 @@ object ImageOptimizer {
         /**
          * Calculate scale factor of the bitmap relative to [maxWidth] and [maxHeight]
          */
-        val scaleFactor: Float = calculateScaleFactor(bmOptions, useMaxScale, maxWidth, maxHeight)
+        val scaleFactor: Float = calculateScaleDownFactor(
+            bmOptions, useMaxScale, maxWidth, maxHeight
+        )
 
         /**
          * Since [BitmapFactory.Options.inSampleSize] only accept value with power of 2,
@@ -86,7 +88,7 @@ object ImageOptimizer {
         /**
          * Calculate the final [scaleFactor] if the image need to scaled up.
          */
-        val finalScaleFactor: Float = finalizeScaleFactor(
+        val finalScaleFactor: Float = calculateScaleUpFactor(
             newBitmapWidth.toFloat(), newBitmapHeight.toFloat(), maxWidth, maxHeight,
             minWidth, minHeight, shouldScaleUp
         )
@@ -121,7 +123,7 @@ object ImageOptimizer {
         return bmOptions
     }
 
-    private fun calculateScaleFactor(
+    private fun calculateScaleDownFactor(
         bmOptions: BitmapFactory.Options,
         useMaxScale: Boolean,
         maxWidth: Float,
@@ -224,7 +226,7 @@ object ImageOptimizer {
         return (minWidth != 0 && minHeight != 0 && (photoW < minWidth || photoH < minHeight))
     }
 
-    private fun finalizeScaleFactor(
+    private fun calculateScaleUpFactor(
         photoW: Float,
         photoH: Float,
         maxWidth: Float,
