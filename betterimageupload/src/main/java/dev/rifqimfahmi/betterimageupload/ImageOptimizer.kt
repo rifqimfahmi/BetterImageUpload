@@ -27,7 +27,7 @@ object ImageOptimizer {
      * @param minWidth the output image min width
      * @param minHeight the output image min height
      *
-     * @return the absolute file path of the scaled and optimized input image
+     * @return output image [android.net.Uri]
      */
     fun optimize(
         context: Context,
@@ -39,7 +39,7 @@ object ImageOptimizer {
         quality: Int,
         minWidth: Int,
         minHeight: Int
-    ): String? {
+    ): Uri? {
         /**
          * Decode uri bitmap from activity result using content provider
          */
@@ -51,8 +51,8 @@ object ImageOptimizer {
         val scaleFactor: Float = calculateScaleFactor(bmOptions, useMaxScale, maxWidth, maxHeight)
 
         /**
-         * Since [BitmapFactory.Options.inSampleSize] only accept multiples of two, we calculate
-         * the nearest power of 2 to the previously calculated scaleFactor
+         * Since [BitmapFactory.Options.inSampleSize] only accept value with power of 2,
+         * we calculate the nearest power of 2 to the previously calculated scaleFactor
          * check doc [BitmapFactory.Options.inSampleSize]
          */
         setNearestInSampleSize(bmOptions, scaleFactor)
@@ -98,10 +98,12 @@ object ImageOptimizer {
         /**
          * scale, compress, and save image
          */
-        return scaleCompressAndSaveImageInternal(
+        val imageFilePath: String = scaleCompressAndSaveImageInternal(
             newBitmap, compressFormat, finalWidth, finalHeight,
             finalScaleFactor, quality, shouldScaleUp
-        )
+        ) ?: return null
+
+        return Uri.fromFile(File(imageFilePath))
     }
 
     private fun decodeBitmapFromUri(
@@ -196,12 +198,12 @@ object ImageOptimizer {
         try {
             bitmap = BitmapFactory.decodeStream(inputStream, null, bmOptions)
             if (bitmap != null) {
-                val newBitmap: Bitmap = Bitmap.createBitmap(
+                val matrixScaledBitmap: Bitmap = Bitmap.createBitmap(
                     bitmap, 0, 0, bitmap.width, bitmap.height, matrix, true
                 )
-                if (newBitmap != bitmap) {
+                if (matrixScaledBitmap != bitmap) {
                     bitmap.recycle()
-                    bitmap = newBitmap
+                    bitmap = matrixScaledBitmap
                 }
             }
             inputStream?.close()

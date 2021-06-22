@@ -124,17 +124,16 @@ class MainActivity : AppCompatActivity() {
             val MAX_PHOTO_SIZE = 1280f
             val MIN_PHOTO_SIZE = 101
             val quality = 80
-            val optimizedImagePath = ImageOptimizer.optimize(
+            val optimizedImageUri = ImageOptimizer.optimize(
                 ctx, imageUri, Bitmap.CompressFormat.JPEG,
                 MAX_PHOTO_SIZE, MAX_PHOTO_SIZE,
                 true, quality,
                 MIN_PHOTO_SIZE, MIN_PHOTO_SIZE
             ) ?: return@launch
-            val uri = Uri.fromFile(File(optimizedImagePath))
-            val fileSize = imageUtil.getImageFileSize(ctx, uri)
-            val bmOptions = imageUtil.decodeImageMetaData(ctx, uri)
+            val fileSize = imageUtil.getImageFileSize(ctx, optimizedImageUri)
+            val bmOptions = imageUtil.decodeImageMetaData(ctx, optimizedImageUri)
             stopLoadingOptimizedImage()
-            updateOptimizedOutputData(fileSize, bmOptions, uri)
+            updateOptimizedOutputData(fileSize, bmOptions, optimizedImageUri)
         }
     }
 
