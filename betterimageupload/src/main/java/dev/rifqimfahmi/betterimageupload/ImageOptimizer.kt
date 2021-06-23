@@ -100,11 +100,17 @@ object ImageOptimizer {
         val finalHeight: Int = finalHeight(newBitmapHeight.toFloat(), scaleUpFactor)
 
         /**
-         * scale, compress, and save image
+         * Generate the final bitmap, by scaling up if needed
          */
-        val imageFilePath: String = scaleCompressAndSaveImageInternal(
-            newBitmap, compressFormat, finalWidth, finalHeight,
-            scaleUpFactor, quality, shouldScaleUp
+        val finalBitmap: Bitmap = scaleUpBitmapIfNeeded(
+            newBitmap, finalWidth, finalHeight, scaleUpFactor, shouldScaleUp
+        )
+
+        /**
+         * compress and save image
+         */
+        val imageFilePath: String = compressAndSaveImage(
+            finalBitmap, compressFormat, quality
         ) ?: return null
 
         return Uri.fromFile(File(imageFilePath))
@@ -260,30 +266,36 @@ object ImageOptimizer {
         return (photoH / scaleUpFactor).toInt()
     }
 
-    private fun scaleCompressAndSaveImageInternal(
+    private fun scaleUpBitmapIfNeeded(
         bitmap: Bitmap,
-        compressFormat: Bitmap.CompressFormat?,
-        w: Int,
-        h: Int,
+        finalWidth: Int,
+        finalHeight: Int,
         scaleUpFactor: Float,
-        quality: Int,
-        isScaleUp: Boolean
-    ): String? {
-        val scaledBitmap: Bitmap = if (scaleUpFactor > 1 || isScaleUp) {
-            Bitmap.createScaledBitmap(bitmap, w, h, true)
+        shouldScaleUp: Boolean
+    ): Bitmap {
+        val scaledBitmap: Bitmap = if (scaleUpFactor > 1 || shouldScaleUp) {
+            Bitmap.createScaledBitmap(bitmap, finalWidth, finalHeight, true)
         } else {
             bitmap
         }
+        if (scaledBitmap != bitmap) {
+            bitmap.recycle()
+        }
+        return scaledBitmap
+    }
+
+    private fun compressAndSaveImage(
+        bitmap: Bitmap,
+        compressFormat: Bitmap.CompressFormat?,
+        quality: Int,
+    ): String? {
         val uniqueID = UUID.randomUUID().toString()
-        val fileName = "test_optim_$uniqueID.jpg"
+        val fileName = "test_optimization_$uniqueID.jpg"
         val fileDir = File("/storage/emulated/0/Download/")
         val imageFile = File(fileDir, fileName)
         val stream = FileOutputStream(imageFile)
-        scaledBitmap.compress(compressFormat, quality, stream) // compress bitmap here
+        bitmap.compress(compressFormat, quality, stream)
         stream.close()
-        if (scaledBitmap != bitmap) {
-            scaledBitmap.recycle()
-        }
         return imageFile.absolutePath
     }
 }
