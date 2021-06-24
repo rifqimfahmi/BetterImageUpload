@@ -296,6 +296,7 @@ object ImageOptimizer {
         val stream = FileOutputStream(imageFile)
         bitmap.compress(compressFormat, quality, stream)
         stream.close()
+        bitmap.recycle()
         return imageFile.absolutePath
     }
 }
