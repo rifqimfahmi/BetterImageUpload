@@ -48,24 +48,24 @@ object ImageOptimizer {
         /**
          * Calculate scale factor of the bitmap relative to [maxWidth] and [maxHeight]
          */
-        val scaleFactor: Float = calculateScaleDownFactor(
+        val scaleDownFactor: Float = calculateScaleDownFactor(
             bmOptions, useMaxScale, maxWidth, maxHeight
         )
 
         /**
          * Since [BitmapFactory.Options.inSampleSize] only accept value with power of 2,
-         * we calculate the nearest power of 2 to the previously calculated scaleFactor
+         * we calculate the nearest power of 2 to the previously calculated scaleDownFactor
          * check doc [BitmapFactory.Options.inSampleSize]
          */
-        setNearestInSampleSize(bmOptions, scaleFactor)
+        setNearestInSampleSize(bmOptions, scaleDownFactor)
 
         /**
          * 2 things we do here with image matrix:
          * - Adjust image rotation
-         * - Scale image matrix based on remaining [scaleFactor / bmOption.inSampleSize]
+         * - Scale image matrix based on remaining [scaleDownFactor / bmOption.inSampleSize]
          */
         val matrix: Matrix = calculateImageMatrix(
-            context, imageUri, scaleFactor, bmOptions
+            context, imageUri, scaleDownFactor, bmOptions
         ) ?: return null
 
         /**
@@ -86,7 +86,7 @@ object ImageOptimizer {
         )
 
         /**
-         * Calculate the final [scaleFactor] if the image need to scaled up.
+         * Calculate the final scaleUpFactor if the image need to be scaled up.
          */
         val scaleUpFactor: Float = calculateScaleUpFactor(
             newBitmapWidth.toFloat(), newBitmapHeight.toFloat(), maxWidth, maxHeight,
@@ -94,7 +94,7 @@ object ImageOptimizer {
         )
 
         /**
-         * calculate the final width and height based on final scale factor
+         * calculate the final width and height based on final scaleUpFactor
          */
         val finalWidth: Int = finalWidth(newBitmapWidth.toFloat(), scaleUpFactor)
         val finalHeight: Int = finalHeight(newBitmapHeight.toFloat(), scaleUpFactor)
